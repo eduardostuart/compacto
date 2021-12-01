@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "compacto",
+    "compacto-cli"
+]

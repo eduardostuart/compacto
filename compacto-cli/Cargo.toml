@@ -1,0 +1,15 @@
+[package]
+name = "compacto-cli"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "3.0.0-beta.5"
+byte-unit = "4.0.13"
+compacto = { path = "../compacto"}
+
+[[bin]]
+name = "compacto"
+path = "./src/main.rs"
