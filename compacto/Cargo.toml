@@ -1,7 +1,15 @@
 [package]
 name = "compacto"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
+authors = ["Eduardo Stuart <e@s.tuart.me>"]
+readme = "../README.md"
+homepage = "https://github.com/eduardostuart/compacto"
+repository = "https://github.com/eduardostuart/compacto.git"
+description = "A fast way to compress & decompress JSON"
+license = "MIT"
+documentation = "https://docs.rs/compacto"
+keywords = ["json", "compression"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

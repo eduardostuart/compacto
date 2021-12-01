@@ -67,7 +67,7 @@ dependencies = [
 
 [[package]]
 name = "compacto"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "seahash",
  "serde",
@@ -76,7 +76,7 @@ dependencies = [
 
 [[package]]
 name = "compacto-cli"
-version = "0.1.0"
+version = "1.0.0"
 dependencies = [
  "byte-unit",
  "clap",
