@@ -4,9 +4,6 @@
 [![Documentation](https://docs.rs/compacto/badge.svg)](https://docs.rs/compacto/)
 
 > A fast way to compress & decompress JSON 
->
-> This library/CLI can work really well if you are compressing big JSON files, 
-> but it won't be useful with small files.
 
 ## Lib
 
