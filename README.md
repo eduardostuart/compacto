@@ -1,7 +1,6 @@
 # COMPACTO
 
 [![ci](https://github.com/eduardostuart/compacto/actions/workflows/ci.yml/badge.svg)](https://github.com/eduardostuart/compacto/actions/workflows/ci.yml)
-[![crates.io](https://img.shields.io/crates/d/compacto.svg)](https://crates.io/crates/compacto)
 [![Documentation](https://docs.rs/compacto/badge.svg)](https://docs.rs/compacto/)
 
 > A fast way to compress & decompress JSON 
