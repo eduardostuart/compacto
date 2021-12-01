@@ -7,8 +7,6 @@
 > This library/CLI can work really well if you are compressing big JSON files, 
 > but it won't be useful with small files.
 
-Quick links: [Documentation](#),  [Crates.io](#)
-
 ## Lib
 
 To use this lib in your project, add the following line to your `Cargo.toml` file:
