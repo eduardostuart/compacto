@@ -41,7 +41,7 @@ Decompress a JSON file/string:
 compacto ./compacto-file.compacto.json ./output.json -d
 ```
 
-### Installation
+<!-- ### Installation
 
 **From binaries**
 
@@ -53,7 +53,7 @@ If you want to build `COMPACTO` from source, you'll need Rust >= 1.56.1 or highe
 
 ```bash
 cargo install --locked compacto
-```
+``` -->
 
 
 ## License
