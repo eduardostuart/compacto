@@ -10,7 +10,7 @@
 To use this lib in your project, add the following line to your `Cargo.toml` file:
 
 ```toml
-compacto = { version = "1.0.1" }
+compacto = { version = "1.0.2" }
 ```
 
 You can find the full documentation on [Docs.rs](https://docs.rs/compacto).
@@ -29,12 +29,12 @@ cargo run --release --example example-filename
 
 Compress a JSON file/string:
 ```bash
-compacto ./input-file.json ./output.compacto.json -c
+compacto ./input-file.json ./output.compacto.json -m compress
 ```
 
 Decompress a JSON file/string:
 ```bash
-compacto ./compacto-file.compacto.json ./output.json -d
+compacto ./compacto-file.compacto.json ./output.json -m decompress
 ```
 
 <!-- ### Installation

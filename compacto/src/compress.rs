@@ -11,46 +11,21 @@ pub struct Compressor {
     output: Value,
 }
 
-impl Default for Compressor {
-    fn default() -> Self {
-        Self {
-            refs: HashMap::new(),
-            output: Value::default(),
-            input: Value::default(),
-        }
-    }
-}
-
 impl Compressor {
     /// Construct a new Compressor using a serde::Value and default values
     ///
     /// Example
     /// ```
-    /// let json = serde_json::from_str(r#"{"my": "json"}"#).unwrap();
-    /// let compacto = compacto::Compressor::new(json);
-    /// println!("{:?}", compacto.compress());
+    /// let compacto = compacto::Compressor::new(r#"{"my": "json"}"#).unwrap();
+    /// println!("{:?}", compacto.compress().unwrap());
     /// ```
-    pub fn new(input: Value) -> Self {
-        Self {
-            input,
-            ..Compressor::default()
-        }
-    }
-
-    /// Construct a new Compressor using a string JSON value
-    /// The string value will be deserialized into `serde_json::Value`
-    ///
-    /// Example
-    /// ```
-    /// let compacto = compacto::Compressor::new_from_str(r#"{"my": "json"}"#).unwrap();
-    /// println!("{:?}", compacto.compress());
-    /// ```
-    pub fn new_from_str(value: &str) -> Result<Self> {
+    pub fn new(value: &str) -> Result<Self> {
         let input = serde_json::from_str(value)?;
 
         Ok(Self {
+            refs: HashMap::new(),
+            output: Value::default(),
             input,
-            ..Compressor::default()
         })
     }
 
@@ -59,7 +34,7 @@ impl Compressor {
     /// compress will return a JSON array containing:
     /// 1. the original JSON structure using only indexes pointing to the reference list
     /// 2. a list of values (the reference table). The list should have no duplicate values
-    pub fn compress(mut self) -> Result<Value> {
+    pub fn compress(mut self) -> Result<String> {
         let json = self.input.clone();
 
         let new_json = match json {
@@ -75,7 +50,10 @@ impl Compressor {
             refs[*index] = value.clone();
         }
 
-        Ok(Value::Array(vec![new_json, Value::Array(refs)]))
+        Ok(format!(
+            "{}",
+            Value::Array(vec![new_json, Value::Array(refs)])
+        ))
     }
 
     // Get hash value from the value and index that will be used as reference
@@ -86,7 +64,7 @@ impl Compressor {
             Value::Bool(b) => format!("bool:{}", b),
             Value::Number(n) => format!("number:{}", n),
             Value::String(s) => s.to_string(),
-            _ => return Err(Error::UnknownJSONValueRef(ref_value.clone())),
+            _ => return Err(Error::UnknownJSONValueRef(ref_value.to_string())),
         };
 
         let hash = format!("{:x}", hash(value.as_bytes()));
@@ -145,38 +123,47 @@ impl Compressor {
 /// let output = compacto::compress_json(json).unwrap();
 /// println!("{:#?}", output);
 /// ```
-pub fn compress_json(json: &str) -> Result<Value> {
-    Compressor::new_from_str(json)?.compress()
+pub fn compress_json(json: &str) -> Result<String> {
+    Compressor::new(json)?.compress()
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
 
-    fn sample() -> Value {
-        serde_json::from_str(
-            r#"{
-                "users": [
-                    {"user": {"id": 1,"name": "eduardo","age": null}},
-                    {"user": {"id": 2,"name": "jose","age": 90}}], 
-                "page": 1
-            }"#,
-        )
-        .unwrap()
+    fn sample() -> String {
+        r#"{
+            "users": [
+                {"user": {"id": 1,"name": "eduardo","age": null}},
+                {"user": {"id": 2,"name": "jose","age": 90}}],
+            "page": 1
+        }"#
+        .to_string()
     }
 
     #[test]
-    fn should_be_able_to_compress_json() {
-        let result = Compressor::new(sample()).compress().unwrap();
-        assert_eq!(true, result.is_array());
-        assert_eq!(true, result.get(0).unwrap().is_object());
-        assert_eq!(true, result.get(1).unwrap().is_array());
+    fn should_be_able_to_compress_json() -> crate::Result<()> {
+        let result = Compressor::new(&sample())?.compress()?;
+        assert_eq!(
+            result,
+            r#"[{"0":1,"2":[{"3":{"4":5,"6":1,"7":8}},{"3":{"4":9,"6":10,"7":11}}]},["page",1,"users","user","age",null,"id","name","eduardo",90,2,"jose"]]"#
+        );
+        Ok(())
     }
 
     #[test]
-    fn should_not_contain_duplicated_values() {
-        let json = Compressor::new(sample()).compress().unwrap();
-        let refs = json.as_array().unwrap().get(1).unwrap().as_array().unwrap();
+    fn should_not_contain_duplicated_values() -> crate::Result<()> {
+        let json = Compressor::new(&sample())?.compress()?;
+        let json_value: Value = serde_json::from_str(&json)?;
+
+        let output = json_value
+            .as_array()
+            .unwrap()
+            .get(1)
+            .unwrap()
+            .as_array()
+            .unwrap()
+            .clone();
 
         assert_eq!(
             vec![
@@ -193,27 +180,35 @@ mod test {
                 Value::Number(2.into()),
                 Value::String("jose".to_string())
             ],
-            refs.clone()
+            output
         );
+
+        Ok(())
     }
 
     #[test]
-    fn should_compress_and_create_reference_of_values() {
-        let json = serde_json::from_str(r#"{"id": "123", "123":"id"}"#).unwrap();
-        let result = Compressor::new(json).compress().unwrap();
+    fn should_compress_and_create_reference_of_values() -> crate::Result<()> {
+        let result = Compressor::new(r#"{"id": "123", "123":"id"}"#)?.compress()?;
+
+        let serde_value = serde_json::from_str::<Value>(&result)?;
+
+        let output = serde_value.as_array();
+        let output_obj = output.unwrap().get(0).unwrap().as_object().unwrap().clone();
+        let output_refs = output.unwrap().get(1).unwrap().as_array().unwrap().clone();
 
         let mut expected = Map::new();
         expected.insert("0".to_string(), 1.into());
         expected.insert("1".to_string(), 0.into());
 
-        assert_eq!(Value::Object(expected), result.get(0).unwrap().clone());
-
+        assert_eq!(expected, output_obj);
         assert_eq!(
-            Value::Array(vec![
+            vec![
                 Value::String("123".to_string()),
                 Value::String("id".to_string()),
-            ]),
-            result.get(1).unwrap().clone()
+            ],
+            output_refs
         );
+
+        Ok(())
     }
 }

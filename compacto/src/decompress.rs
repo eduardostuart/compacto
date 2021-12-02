@@ -9,45 +9,21 @@ pub struct Decompressor {
     output: Value,
 }
 
-impl Default for Decompressor {
-    fn default() -> Self {
-        Self {
-            refs: Vec::new(),
-            output: Value::default(),
-            input: Value::default(),
-        }
-    }
-}
-
 impl Decompressor {
-    /// Construct a new Decompressor using a serde::Value and default values
-    ///
-    /// Example
-    /// ```
-    /// let json = serde_json::from_str(r#"[{"0":1,"1": 0},["a","b"]]"#).unwrap();
-    /// let mut compacto = compacto::Decompressor::new(json);
-    /// println!("{:?}", compacto.decompress());
-    /// ```
-    pub fn new(input: Value) -> Self {
-        Self {
-            input,
-            ..Decompressor::default()
-        }
-    }
-
     /// Construct a new Decompressor using a a JSON string and default values
     ///
     /// Example
     /// ```
-    /// let mut compacto = compacto::Decompressor::new_from_str(r#"[{"0":1,"1": 0},["a","b"]]"#).unwrap();
-    /// println!("{:?}", compacto.decompress());
+    /// let mut compacto = compacto::Decompressor::new(r#"[{"0":1,"1": 0},["a","b"]]"#).unwrap();
+    /// println!("{:?}", compacto.decompress().unwrap());
     /// ```
-    pub fn new_from_str(value: &str) -> Result<Self> {
+    pub fn new(value: &str) -> Result<Self> {
         let input = serde_json::from_str(value)?;
 
         Ok(Self {
             input,
-            ..Decompressor::default()
+            refs: Vec::new(),
+            output: Value::default(),
         })
     }
 
@@ -56,9 +32,9 @@ impl Decompressor {
     /// decompress will first check if the input is an array and its length is equal to two.  
     /// If it does not match the "criteria to decompress," the original input will be returned.
     /// If the input matches the criteria, we rebuilt the JSON using the reference table.
-    pub fn decompress(&mut self) -> Result<Value> {
+    pub fn decompress(&mut self) -> Result<String> {
         if !self.input.is_array() || self.input.as_array().unwrap().len() != 2 {
-            return Ok(self.input.clone());
+            return Ok(self.input.to_string());
         }
 
         self.refs = match self.input.get(1) {
@@ -66,14 +42,20 @@ impl Decompressor {
             None => Vec::new(),
         };
 
-        Ok(match self.input.get(0) {
-            Some(value) => match value {
-                Value::Array(a) => self.find_array_value_by_ref(a),
-                Value::Object(o) => self.find_object_value_by_ref(o),
-                _ => self.find_value_by_ref(value),
-            }?,
-            None => Value::Null,
-        })
+        let result = match self.input.get(0) {
+            Some(value) => {
+                let output = match value {
+                    Value::Array(a) => self.find_array_value_by_ref(a),
+                    Value::Object(o) => self.find_object_value_by_ref(o),
+                    _ => self.find_value_by_ref(value),
+                }?;
+
+                output.to_string()
+            }
+            None => Value::Null.to_string(),
+        };
+
+        Ok(result)
     }
 
     pub(self) fn find_array_value_by_ref(&self, value: &[Value]) -> Result<Value> {
@@ -119,7 +101,7 @@ impl Decompressor {
                 let index: usize = s.parse().unwrap();
                 Ok(self.refs[index].clone())
             }
-            _ => Err(Error::UnknownJSONValueRef(value.clone())),
+            _ => Err(Error::UnknownJSONValueRef(value.to_string())),
         }
     }
 }
@@ -133,54 +115,51 @@ impl Decompressor {
 /// let output = compacto::decompress_json(json).unwrap();
 /// println!("{:#?}", output);
 /// ```
-pub fn decompress_json(json: &str) -> Result<Value> {
-    Decompressor::new_from_str(json)?.decompress()
+pub fn decompress_json(json: &str) -> Result<String> {
+    Decompressor::new(json)?.decompress()
 }
 
 #[cfg(test)]
 mod test {
-    use crate::test_utils;
-
     use super::*;
 
+    const OUTPUT_SAMPLE: &str = include_str!("../../samples/test-samples/output.json");
+    const INPUT_SAMPLE: &str = include_str!("../../samples/test-samples/input.json");
+
     #[test]
-    fn should_return_valid_json() {
-        let result = Decompressor::new(test_utils::get_json_value_sample("output.json"))
-            .decompress()
-            .unwrap();
-        assert_eq!(true, result.is_object());
+    fn should_return_valid_json() -> crate::Result<()> {
+        let result = Decompressor::new(OUTPUT_SAMPLE)?.decompress()?;
+        let output: Value = serde_json::from_str(&result)?;
+        assert_eq!(true, output.is_object());
+        Ok(())
     }
 
     #[test]
-    fn should_be_equal_to_original_json() {
-        let result = Decompressor::new(test_utils::get_json_value_sample("output.json"))
-            .decompress()
-            .unwrap();
-        let expect: Value = test_utils::get_json_value_sample("input.json");
-        assert_eq!(expect, result);
+    fn should_be_equal_to_original_json() -> crate::Result<()> {
+        let result = Decompressor::new(OUTPUT_SAMPLE)?.decompress()?;
+        let result_value: Value = serde_json::from_str(&result)?;
+        let expect: Value = serde_json::from_str(INPUT_SAMPLE)?;
+        assert_eq!(expect, result_value);
+        Ok(())
     }
 
     #[test]
-    fn should_return_original_input_if_not_array() {
-        let result = Decompressor::new_from_str(r#"{"ok":"ok"}"#)
-            .unwrap()
-            .decompress()
-            .unwrap();
-
+    fn should_return_original_input_if_not_array() -> crate::Result<()> {
+        let result = Decompressor::new(r#"{"ok":"ok"}"#)?.decompress()?;
+        let result_value: Value = serde_json::from_str(&result)?;
         let mut expected = Map::new();
         expected.insert("ok".to_string(), Value::String("ok".to_string()));
-        assert_eq!(Value::Object(expected), result);
+        assert_eq!(Value::Object(expected), result_value);
+        Ok(())
     }
 
     #[test]
-    fn should_return_original_input_if_not_array_expected_length() {
-        let result = Decompressor::new_from_str(r#"[{"ok":"ok"}]"#)
-            .unwrap()
-            .decompress()
-            .unwrap();
-
+    fn should_return_original_input_if_not_array_expected_length() -> crate::Result<()> {
+        let result = Decompressor::new(r#"[{"ok":"ok"}]"#)?.decompress()?;
+        let result_obj: Value = serde_json::from_str(&result)?;
         let mut expected = Map::new();
         expected.insert("ok".to_string(), Value::String("ok".to_string()));
-        assert_eq!(Value::Array(vec![Value::Object(expected)]), result);
+        assert_eq!(Value::Array(vec![Value::Object(expected)]), result_obj);
+        Ok(())
     }
 }
