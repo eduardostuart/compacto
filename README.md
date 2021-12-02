@@ -37,20 +37,11 @@ Decompress a JSON file/string:
 compacto ./compacto-file.compacto.json ./output.json -m decompress
 ```
 
-<!-- ### Installation
+### Installation
 
 **From binaries**
 
-Check out the [release page](#) for prebuilt versions of `COMPACTO`.
-
-**From source**
-
-If you want to build `COMPACTO` from source, you'll need Rust >= 1.56.1 or higher. 
-
-```bash
-cargo install --locked compacto
-``` -->
-
+Check out the [release page](./releases) for prebuilt versions of `COMPACTO`.
 
 ## License
 
