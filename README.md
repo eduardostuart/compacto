@@ -10,7 +10,7 @@
 To use this lib in your project, add the following line to your `Cargo.toml` file:
 
 ```toml
-compacto = { version = "1.0.0" }
+compacto = { version = "1.0.1" }
 ```
 
 You can find the full documentation on [Docs.rs](https://docs.rs/compacto).
