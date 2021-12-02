@@ -41,7 +41,7 @@ compacto ./compacto-file.compacto.json ./output.json -m decompress
 
 **From binaries**
 
-Check out the [release page](./releases) for prebuilt versions of `COMPACTO`.
+Check out the [release page](https://github.com/eduardostuart/compacto/releases/) for prebuilt versions of `COMPACTO`.
 
 ## License
 
